@@ -50,14 +50,13 @@ func Day16() int {
 		}
 		valvesMap[id] = v
 		mask <<= 1
-		// fmt.Println(v)
 	}
 
 	for _, valve := range valvesMap {
 		fmt.Println(valve)
 	}
 	memo := make(map[memoKey]int)
-	res := getFlowValue(valvesMap["AA"], valvesMap["AA"], 30, valvesMap, memo)
+	res := getFlowValue(valvesMap["AA"], valvesMap["AA"], 26, valvesMap, memo)
 
 	fmt.Println()
 	for _, valve := range valvesMap {
@@ -82,7 +81,6 @@ func getFlowValue(cur *valve, curEl *valve, minutes int, valvesMap map[string]*v
 		}
 	}
 
-	// fmt.Println(cur, curFlowRate)
 	key := getMemoKey(cur.id, curEl.id, valvesMap, minutes, curFlowRate)
 	if v, ok := memo[key]; ok {
 		return v
@@ -99,39 +97,39 @@ func getFlowValue(cur *valve, curEl *valve, minutes int, valvesMap map[string]*v
 	opts = append(opts, func() int { return curFlowRate * minutes })
 
 	// open cur valve
-	if cur.flowRate > 0 && minutes >= 1 && !valvesMap[cur.id].isOpen {
+	if cur.flowRate > 0 && !valvesMap[cur.id].isOpen {
 		opts = append(opts, func() int {
+			res := 0
 			valvesMap[cur.id].isOpen = true
-			flowValue := curFlowRate * 1
-			res := flowValue + getFlowValue(cur, curEl, minutes-1, valvesMap, memo)
+			if curEl.flowRate > 0 && !valvesMap[curEl.id].isOpen {
+				valvesMap[curEl.id].isOpen = true
+				res = max(res, curFlowRate+getFlowValue(cur, curEl, minutes-1, valvesMap, memo))
+				valvesMap[curEl.id].isOpen = false
+			}
+			for _, tunnel := range curEl.tunnels {
+				res = max(res, curFlowRate+getFlowValue(cur, valvesMap[tunnel], minutes-1, valvesMap, memo))
+			}
 			valvesMap[cur.id].isOpen = false
 			return res
 		})
-		// for _, tunnel := range cur.tunnels {
-		// 	// first minute + second minute
-		// 	t := tunnel
-		// 	opt := func() int {
-		// 		valvesMap[cur.id].isOpen = true
-		// 		flowValue := curFlowRate + (curFlowRate + cur.flowRate)
-		// 		res := flowValue + getFlowValue(valvesMap[t], curEl, minutes-2, valvesMap, memo)
-		// 		valvesMap[cur.id].isOpen = false
-		// 		return res
-		// 	}
-		// 	opts = append(opts, opt)
-		// }
 	}
 
 	// skip current valve
-	if minutes >= 1 {
-		for _, tunnel := range cur.tunnels {
-			t := tunnel
-			opt := func() int {
-				flowValue := curFlowRate * 1
-				res := flowValue + getFlowValue(valvesMap[t], curEl, minutes-1, valvesMap, memo)
-				return res
+	for _, tunnel := range cur.tunnels {
+		t := tunnel
+		opt := func() int {
+			res := 0
+			for _, elTunnel := range curEl.tunnels {
+				res = max(res, curFlowRate+getFlowValue(valvesMap[t], valvesMap[elTunnel], minutes-1, valvesMap, memo))
 			}
-			opts = append(opts, opt)
+			if curEl.flowRate > 0 && !valvesMap[curEl.id].isOpen {
+				valvesMap[curEl.id].isOpen = true
+				res = max(res, curFlowRate+getFlowValue(valvesMap[t], curEl, minutes-1, valvesMap, memo))
+				valvesMap[curEl.id].isOpen = false
+			}
+			return res
 		}
+		opts = append(opts, opt)
 	}
 
 	res := 0
@@ -148,11 +146,9 @@ func getMemoKey(curId string, curElID string, valvesMap map[string]*valve, minut
 	if valvesMap[curId].isOpen {
 		mask += 1
 	}
-	// for _, v := range valvesMap {
-	// 	if v.isOpen {
-	// 		mask |= v.mask
-	// 	}
-	// }
+	if valvesMap[curElID].isOpen {
+		mask += 2
+	}
 
 	return memoKey{curId, curElID, mask, minutes, curFlowRate}
 }
