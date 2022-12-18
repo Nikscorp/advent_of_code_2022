@@ -15,10 +15,6 @@ type coord3 struct {
 	x, y, z int
 }
 
-type coords struct {
-	c1, c2 coord3
-}
-
 func Day18_1() int {
 	reader := bufio.NewReader(os.Stdin)
 	cubes := make([]*cube, 0)
