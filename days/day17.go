@@ -182,9 +182,7 @@ func getHighest(grid [][]byte) int {
 
 func printGrid(grid [][]byte) {
 	fmt.Println()
-	for i, line := range grid {
-		if true || i > len(grid)-20 {
-			fmt.Println(string(line))
-		}
+	for _, line := range grid {
+		fmt.Println(string(line))
 	}
 }
